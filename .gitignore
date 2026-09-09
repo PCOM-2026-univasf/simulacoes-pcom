@@ -10,3 +10,6 @@ venv/
 
 # Imagens de saída da simulação (geradas localmente)
 visualizacao_semaforo.png
+
+# Arquivos do macOS
+.DS_Store

@@ -1,25 +1,14 @@
-# Tema 3 — Algoritmo automático de verificação de sobremodulação
+# PCOM 2026 — Simulações
 
-Esse repositório contém o código necessário para decidir programaticamente se um sinal AM pode ser demodulado por detecção de envoltório, e sugere o valor mínimo de portadora necessário.
+Repositório com as atividades de simulação da disciplina, organizadas por
+pasta.
 
----
+| Pasta | Tema | Descrição |
+|-------|------|-----------|
+| [`simulacao-3/`](simulacao-3/) | Modulação AM | Algoritmo automático de verificação de sobremodulação e cálculo da portadora mínima `a_min`. Script Python + simulação web interativa. |
+| [`simulacao-8/`](simulacao-8/) | Modulação Angular (FM/PM) | Tópico 8 — demodulação de FM e de PM pela fase instantânea (Hilbert + `unwrap`). Script Python + simulação web interativa. |
 
-## Estrutura
-
-- `test_cases.json`: Arquivo de configuração flexível contendo os dados dos casos de teste (seno simples, soma de senos, sinal triangular, ruído aleatório e arquivo de áudio real) e as amplitudes $A$ a serem testadas.
-- `signal_generator.py`: Módulo responsável por converter as definições de sinais do JSON em vetores de dados.
-- `overmodulation_checker.py`: Script principal contendo a função de verificação matemática `verifica_envelope()` e a geração dos plots de análise.
-- `run.py`: Script portátil utilitário de bootstrap.
-
----
-
-## Executando
-
-1. **Clone o repositório** e entre na pasta do projeto.
-2. Execute o script inicializador:
-   ```bash
-   python3 run.py
-   ```
+Cada pasta tem o próprio `README.md` com instruções de execução.
 
 ---
 

@@ -1,0 +1,353 @@
+/* ==========================================================================
+   Simulação 8 — Modulação Angular (FM / PM)
+   Tópico 8 · Demodulação pela fase instantânea
+   Tema escuro monocromático com destaque teal
+   ========================================================================== */
+
+:root {
+  --bg-dark: #09090b;
+  --bg-card: #121215;
+  --border-color: #27272a;
+
+  --text-main: #ffffff;
+  --text-muted: #a1a1aa;
+  --text-dim: #71717a;
+
+  /* Cores das séries (mesma convenção do código Python) */
+  --signal: #38bdf8;   /* m(t) — mensagem            */
+  --fm: #f59e0b;        /* grandezas de FM            */
+  --pm: #a78bfa;        /* grandezas de PM            */
+  --accent: #2dd4bf;    /* destaque da interface      */
+  --alert: #ef4444;     /* erro acima do tolerável    */
+
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+  --shadow-main: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  min-height: 100vh;
+  line-height: 1.5;
+  padding: 2rem 1.5rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header ------------------------------------------------------------------- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 1.25rem 1.75rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-main);
+}
+
+.header-title h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.header-title p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.badge-topic {
+  background: #18181b;
+  color: var(--accent);
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Layout ---------------------------------------------------------------- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-main);
+  transition: border-color 0.2s ease;
+}
+
+.card:hover { border-color: var(--text-dim); }
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+/* Controles ------------------------------------------------------------- */
+.control-sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+.main-panels { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.control-group { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.form-field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.form-field label {
+  font-size: 0.825rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.value-display {
+  color: var(--text-main);
+  font-family: monospace;
+  font-weight: 700;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  background: #27272a;
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-main);
+  cursor: pointer;
+  border: 2px solid var(--bg-dark);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: var(--accent);
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+}
+
+.checkbox-field input { width: 15px; height: 15px; accent-color: var(--accent); }
+
+/* Cartões de métrica -------------------------------------------------- */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.metric-card {
+  background: #09090b;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  text-align: center;
+  transition: border-color 0.2s ease;
+}
+
+.metric-card.alert-border {
+  border-color: var(--alert);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.metric-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.metric-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: monospace;
+  margin-top: 0.15rem;
+}
+
+.metric-value.fm { color: var(--fm); }
+.metric-value.pm { color: var(--pm); }
+.metric-value.alert-text { color: var(--alert); }
+
+/* Botões -------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: #18181b;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.btn:hover { background: #27272a; border-color: var(--text-muted); }
+
+.btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Canvas ------------------------------------------------------------- */
+.canvas-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  background: #050507;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+canvas { width: 100%; height: 100%; display: block; }
+
+.canvas-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #18181b;
+  border: 1px solid var(--border-color);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.legend {
+  display: flex;
+  gap: 1.4rem;
+  justify-content: center;
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+}
+
+.legend .swatch {
+  display: inline-block;
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend .swatch.dashed { height: 0; border-top: 3px dashed currentColor; }
+
+/* Tabela ----------------------------------------------------------- */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+
+th {
+  background: #18181b;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  font-family: monospace;
+}
+
+td:first-child { font-family: var(--font-family); font-weight: 600; }
+
+tbody tr:last-child td { border-bottom: none; }
+
+.tag-fm { color: var(--fm); }
+.tag-pm { color: var(--pm); }
+
+/* Nota / discussão ----------------------------------------------- */
+.note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.note strong { color: var(--text-main); }
+
+/* Footer -------------------------------------------------------- */
+footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  border-top: 1px solid var(--border-color);
+  margin-top: 1rem;
+}

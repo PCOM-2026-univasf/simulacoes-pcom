@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modulação Angular — Demodulação FM &amp; PM</title>
+  <meta name="description" content="Simulação interativa do Tópico 8: recuperação da mensagem m(t) a partir de sinais FM e PM usando a fase instantânea (Hilbert + unwrap).">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="container">
+
+    <header class="app-header">
+      <div class="header-title">
+        <h1>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M2 12h3l3-9 6 18 3-9h4"/></svg>
+          MODULAÇÃO ANGULAR — Demodulação FM &amp; PM
+        </h1>
+        <p>Recuperação de m(t) pela fase instantânea: sinal analítico (Hilbert) &rarr; <code>unwrap</code> &rarr; derivada (FM) / fase direta (PM)</p>
+      </div>
+      <span class="badge-topic">Tópico 8</span>
+    </header>
+
+    <div class="dashboard-grid">
+
+      <aside class="control-sidebar">
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg>
+              Parâmetros
+            </span>
+          </div>
+
+          <div class="control-group">
+
+            <div class="form-field">
+              <label for="fc"><span>Portadora f<sub>c</sub></span><span id="valFc" class="value-display">10.0 kHz</span></label>
+              <input type="range" id="fc" min="5000" max="20000" step="500" value="10000">
+            </div>
+
+            <div class="form-field">
+              <label for="fm"><span>Mensagem f<sub>m</sub></span><span id="valFm" class="value-display">500 Hz</span></label>
+              <input type="range" id="fm" min="200" max="2000" step="50" value="500">
+            </div>
+
+            <div class="form-field">
+              <label for="am"><span>Amplitude da mensagem A<sub>m</sub></span><span id="valAm" class="value-display">1.00 V</span></label>
+              <input type="range" id="am" min="0.2" max="2.0" step="0.05" value="1.00">
+            </div>
+
+            <div class="form-field">
+              <label for="df"><span>Desvio de frequência &Delta;f (FM)</span><span id="valDf" class="value-display">5.0 kHz</span></label>
+              <input type="range" id="df" min="1000" max="12000" step="250" value="5000">
+            </div>
+
+            <div class="form-field">
+              <label for="kp"><span>Sensibilidade de fase k<sub>p</sub> (PM)</span><span id="valKp" class="value-display">2.00 rad/V</span></label>
+              <input type="range" id="kp" min="0.5" max="4.0" step="0.05" value="2.00">
+            </div>
+
+            <label class="checkbox-field">
+              <input type="checkbox" id="noiseOn">
+              Adicionar ruído AWGN <span style="color:var(--text-dim)">(prévia do Tópico 9)</span>
+            </label>
+
+            <div class="form-field">
+              <label for="snr"><span>SNR de entrada</span><span id="valSnr" class="value-display">30 dB</span></label>
+              <input type="range" id="snr" min="0" max="40" step="1" value="30" disabled>
+            </div>
+
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Índice &beta; = &Delta;f / f<sub>m</sub></div>
+                <div id="valBeta" class="metric-value">10.0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Desvio de fase de pico k<sub>p</sub>&middot;A<sub>m</sub></div>
+                <div id="valPkPhase" class="metric-value">2.00 rad</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Qualidade da recuperação
+            </span>
+          </div>
+          <div class="metrics-row">
+            <div id="cardMseFm" class="metric-card">
+              <div class="metric-label">MSE FM (janela central)</div>
+              <div id="valMseFm" class="metric-value fm">–</div>
+            </div>
+            <div id="cardMsePm" class="metric-card">
+              <div class="metric-label">MSE PM (janela central)</div>
+              <div id="valMsePm" class="metric-value pm">–</div>
+            </div>
+          </div>
+          <p class="note" style="margin-top: 0.9rem;">
+            MSE entre a mensagem original e a recuperada. A janela central
+            descarta 5&nbsp;% das amostras em cada extremidade, isolando os
+            <strong>artefatos de borda</strong> (Hilbert + derivada numérica).
+          </p>
+        </div>
+
+      </aside>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- Painéis principais                                              -->
+      <!-- ---------------------------------------------------------------- -->
+      <main class="main-panels">
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Mensagem: original &times; recuperada
+            </span>
+            <button id="btnPngMsg" class="btn">Salvar PNG</button>
+          </div>
+          <div class="canvas-container">
+            <span class="canvas-tag">m(t) [V] &times; tempo [ms]</span>
+            <canvas id="canvasMsg"></canvas>
+          </div>
+          <div class="legend">
+            <span style="color: var(--signal)"><span class="swatch" style="background: var(--signal)"></span> m(t) original</span>
+            <span style="color: var(--fm)"><span class="swatch dashed"></span> recuperada (FM)</span>
+            <span style="color: var(--pm)"><span class="swatch dashed"></span> recuperada (PM)</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+              Frequência instantânea f<sub>i</sub>(t)
+            </span>
+            <button id="btnPngFi" class="btn">Salvar PNG</button>
+          </div>
+          <div class="canvas-container">
+            <span class="canvas-tag">f<sub>i</sub>(t) [kHz] &times; tempo [ms]</span>
+            <canvas id="canvasFi"></canvas>
+          </div>
+          <div class="legend">
+            <span style="color: var(--fm)"><span class="swatch" style="background: var(--fm)"></span> f<sub>i</sub> medida (FM)</span>
+            <span style="color: var(--signal)"><span class="swatch dashed"></span> f<sub>c</sub> + k<sub>f</sub>&middot;m(t) (teórica FM)</span>
+            <span style="color: var(--pm)"><span class="swatch" style="background: var(--pm)"></span> f<sub>i</sub> medida (PM)</span>
+          </div>
+          <p class="note" style="margin-top: 0.85rem;">
+            Na FM a frequência instantânea acompanha <strong>m(t)</strong>; na PM
+            ela acompanha a <strong>derivada</strong> de m(t) (fica adiantada 90&deg;).
+            Por isso a FM recupera a mensagem direto da f<sub>i</sub>, enquanto a PM
+            usa a própria fase, sem derivar.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Erro por região
+            </span>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sinal</th>
+                  <th>MSE total</th>
+                  <th>MSE central</th>
+                  <th>|erro| máx. borda</th>
+                  <th>|erro| máx. centro</th>
+                </tr>
+              </thead>
+              <tbody id="errTableBody"></tbody>
+            </table>
+          </div>
+          <p class="note" style="margin-top: 0.9rem;">
+            Sem ruído, o erro é dominado pelas <strong>bordas</strong>: a
+            transformada de Hilbert por FFT supõe o sinal periódico na janela e
+            a diferença finita de <code>np.gradient</code> usa fórmula lateral
+            nas pontas. Ligue o ruído AWGN para ver a FM se degradar mais
+            devagar que a PM em SNR alto — e desabar abaixo do limiar
+            (<em>threshold effect</em>).
+          </p>
+        </div>
+
+      </main>
+
+    </div>
+
+    <footer>
+      <p>Simulação 8 &middot; Modulação Angular &middot; Tópico 8 — Demodulação de FM e de PM</p>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
