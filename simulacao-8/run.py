@@ -1,9 +1,9 @@
 """
-Bootstrap portátil da Simulação 8.
-=================================
-Verifica as dependências (numpy, scipy, matplotlib) e executa o script da Simulação 8:
-- Por padrão executa `simulacao8_equivalencia.py` (equivalência FM/PM).
-- Se passar `--demod` como argumento, executa `topico8_demodulacao.py` (demodulação).
+Bootstrap portátil da Simulação 8 — Tópico 8: Demodulação de FM e de PM.
+========================================================================
+Verifica as dependências (numpy, scipy, matplotlib), localiza o ambiente
+virtual adequado e executa o script principal da Simulação 8:
+`topico8_demodulacao.py`.
 """
 
 import os
@@ -66,10 +66,7 @@ def instala_dependencias(python_bin):
 
 
 def main():
-    script_alvo = 'simulacao8_equivalencia.py'
-    if '--demod' in sys.argv:
-        script_alvo = 'topico8_demodulacao.py'
-
+    script_alvo = 'topico8_demodulacao.py'
     python_alvo = busca_python_valido()
 
     if not python_alvo:

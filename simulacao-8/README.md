@@ -1,159 +1,187 @@
-# Simulação 8 — Modulação Angular (FM e PM): Relação e Equivalência entre Moduladores
+# Simulação 8 — Modulação Angular (FM e PM)
 
-Esta simulação tem como objetivo demonstrar analítica e numericamente a **equivalência entre os moduladores de frequência (FM) e de fase (PM)** utilizando blocos prévios de integração e diferenciação.
+## Tópico 8 — Demodulação de FM e de PM
+
+Atividade prática da disciplina de **Princípios de Comunicação (PCOM 2026)** — Universidade Federal do Vale do São Francisco (UNIVASF).
 
 ---
 
-## 1. Demonstração Formal Matemática
+## 1. Roteiro e Requisitos Oficiais
 
-Um sinal modulado em ângulo geral tem a forma:
-$$s(t) = A_c \cos(\theta_i(t)) = A_c \cos(2\pi f_c t + \phi(t))$$
+- **Objetivo:** Recuperar o sinal mensagem $m(t)$ a partir dos sinais modulados, usando técnicas simples baseadas na fase instantânea.
+- **Execução:**
+  1. Obter a fase instantânea de $s_{\text{FM}}(t)$ e de $s_{\text{PM}}(t)$ via sinal analítico (`scipy.signal.hilbert`) seguida de `np.unwrap` sobre o ângulo.
+  2. Para **FM**: diferenciar a fase instantânea (diferença finita) para obter $f_i(t)$ e, a partir de $k_f$ conhecido, recuperar uma estimativa de $m(t)$.
+  3. Para **PM**: usar a fase instantânea diretamente (sem diferenciar) e, a partir de $k_p$ conhecido, recuperar uma estimativa de $m(t)$.
+  4. Sobrepor, em **gráficos separados**, o $m(t)$ original e o $m(t)$ recuperado (FM e PM) e calcular o erro quadrático médio (MSE) entre eles.
+- **Entregável:** Gráficos de $m(t)$ original $\times$ recuperado (FM e PM) + valor de MSE para cada caso.
+- **Critério de Avaliação:** Método de demodulação implementado corretamente; MSE pequeno na ausência de ruído; eventuais artefatos nas bordas (efeito da derivada numérica) identificados e comentados.
+
+---
+
+## 2. Fundamentação Teórica
+
+### 2.1 Modulação Angular e Conceito de Fase Instantânea
+
+Um sinal geral modulado em ângulo é modelado por:
+$$s(t) = A_c \cos(\theta_i(t))$$
+
+onde $\theta_i(t)$ é a fase total instantânea (em radianos).
+
+Para extrair $\theta_i(t)$ a partir do sinal real passa-faixa $s(t)$, constrói-se o **sinal analítico** associado $z(t)$ utilizando a transformada de Hilbert $\mathcal{H}\{s(t)\}$:
+$$z(t) = s(t) + j \mathcal{H}\{s(t)\} = A_i(t) e^{j \theta_i(t)}$$
 
 onde:
-- $\phi(t)$ é o desvio de fase instantâneo (rad);
-- $f_i(t) = \frac{1}{2\pi}\frac{d\theta_i(t)}{dt} = f_c + \frac{1}{2\pi}\frac{d\phi(t)}{dt}$ é a frequência instantânea (Hz);
-- $\Delta f_i(t) = f_i(t) - f_c = \frac{1}{2\pi}\frac{d\phi(t)}{dt}$ é o desvio de frequência instantâneo (Hz).
+- $A_i(t) = |z(t)| = \sqrt{s^2(t) + \mathcal{H}^2\{s(t)\}}$ é o envelope instantâneo;
+- $\theta_i(t) = \text{unwrap}\big(\arg(z(t))\big)$ é a **fase instantânea desdobrada**, eliminando as descontinuidades de módulo $2\pi$.
 
 ---
 
-### a) Geração de FM a partir de Modulador PM (Integrador + Modulador PM $\longrightarrow$ Modulador FM)
+### 2.2 Demodulação de Fase (PM)
 
-Queremos obter um sinal FM cuja frequência instantânea seja proporcional à mensagem $m(t)$ utilizando um modulador de fase (PM).
+O sinal modulado em fase com sensibilidade $k_p$ (rad/V) é expresso por:
+$$s_{\text{PM}}(t) = A_c \cos(2\pi f_c t + k_p m(t))$$
 
-1. **Pré-processamento (Integrador)**:
-   A mensagem $m(t)$ passa por um integrador no tempo:
-   $$x(t) = \int_0^t m(\tau) \, d\tau$$
+A fase instantânea extraída pelo sinal analítico é:
+$$\theta_i(t) = 2\pi f_c t + k_p m(t) + \theta_0$$
 
-2. **Modulação em Fase (PM)**:
-   O sinal integrado $x(t)$ alimenta um modulador PM caracterizado pela constante de sensibilidade de fase $k_p$ (rad/V):
-   $$s(t) = A_c \cos(2\pi f_c t + k_p x(t)) = A_c \cos\left(2\pi f_c t + k_p \int_0^t m(\tau) \, d\tau\right)$$
+Como a fase da portadora cresce linearmente com taxa $2\pi f_c$, o desvio de fase instantâneo proporcional à mensagem é isolado subtraindo-se a rampa da portadora:
+$$\Delta\phi(t) = \theta_i(t) - 2\pi f_c t - \theta_0 = k_p m(t)$$
 
-3. **Cálculo da Frequência Instantânea**:
-   Derivando a fase total $\theta_i(t)$:
-   $$f_i(t) = \frac{1}{2\pi} \frac{d\theta_i(t)}{dt} = \frac{1}{2\pi} \frac{d}{dt}\left[ 2\pi f_c t + k_p \int_0^t m(\tau) \, d\tau \right] = f_c + \frac{k_p}{2\pi} m(t)$$
-
-4. **Conclusão de Equivalência**:
-   O desvio de frequência instantâneo é:
-   $$\Delta f_i(t) = \frac{k_p}{2\pi} m(t)$$
-   Note que $\Delta f_i(t)$ é **diretamente proporcional a $m(t)$**, exatamente como em um modulador FM direto ($f_i(t) = f_c + k_f m(t)$).
-   Portanto, ajustando a constante para:
-   $$k_p = 2\pi k_f \iff k_f = \frac{k_p}{2\pi}$$
-   o arranjo **Integrador + Modulador PM é identicamente equivalente a um Modulador FM direto**. $\blacksquare$
+Portanto, **sem necessidade de diferenciação**, a mensagem recuperada é obtida diretamente por:
+$$\hat{m}_{\text{PM}}(t) = \frac{\Delta\phi(t)}{k_p}$$
 
 ---
 
-### b) Geração de PM a partir de Modulador FM (Diferenciador + Modulador FM $\longrightarrow$ Modulador PM)
+### 2.3 Demodulação de Frequência (FM)
 
-Queremos obter um sinal PM cujo desvio de fase seja proporcional à mensagem $m(t)$ utilizando um modulador de frequência (FM).
+O sinal modulado em frequência com sensibilidade $k_f$ (Hz/V) é expresso por:
+$$s_{\text{FM}}(t) = A_c \cos\left(2\pi f_c t + 2\pi k_f \int_0^t m(\tau) \, d\tau\right)$$
 
-1. **Pré-processamento (Diferenciador)**:
-   A mensagem $m(t)$ passa por um diferenciador no tempo:
-   $$y(t) = \frac{dm(t)}{dt}$$
+Sua fase instantânea é:
+$$\theta_i(t) = 2\pi f_c t + 2\pi k_f \int_0^t m(\tau) \, d\tau$$
 
-2. **Modulação em Frequência (FM)**:
-   O sinal diferenciado $y(t)$ alimenta um modulador FM caracterizado pela constante de sensibilidade de frequência $k_f$ (Hz/V):
-   $$s(t) = A_c \cos\left(2\pi f_c t + 2\pi k_f \int_0^t y(\tau) \, d\tau\right) = A_c \cos\left(2\pi f_c t + 2\pi k_f \int_0^t \frac{dm(\tau)}{d\tau} \, d\tau\right)$$
+A **frequência instantânea** $f_i(t)$ (em Hz) corresponde à taxa de variação temporal da fase dividida por $2\pi$:
+$$f_i(t) = \frac{1}{2\pi} \frac{d\theta_i(t)}{dt} = f_c + k_f m(t)$$
 
-3. **Cálculo da Fase Instantânea**:
-   Pelo Teorema Fundamental do Cálculo:
-   $$\int_0^t \frac{dm(\tau)}{d\tau} \, d\tau = m(t) - m(0)$$
-   Adotando referência nula $m(0) = 0$ (ou incorporando a constante residual como fase estática da portadora):
-   $$s(t) = A_c \cos\left(2\pi f_c t + 2\pi k_f m(t)\right)$$
-
-4. **Conclusão de Equivalência**:
-   O desvio de fase instantâneo é:
-   $$\phi(t) = 2\pi k_f m(t)$$
-   Note que $\phi(t)$ é **diretamente proporcional a $m(t)$**, exatamente como em um modulador PM direto ($s(t) = A_c \cos(2\pi f_c t + k_p m(t))$).
-   Portanto, ajustando a constante para:
-   $$2\pi k_f = k_p \iff k_f = \frac{k_p}{2\pi}$$
-   o arranjo **Diferenciador + Modulador FM é identicamente equivalente a um Modulador PM direto**. $\blacksquare$
+Utilizando a aproximação por **diferenças finitas temporais** (`np.gradient`), obtém-se $f_i(t)$ e a mensagem é recuperada por:
+$$\hat{m}_{\text{FM}}(t) = \frac{f_i(t) - f_c}{k_f}$$
 
 ---
 
-### Análise Didática sobre o Enunciado (Caso Senoidal vs Caso Geral)
+## 3. Síntese Comparativa do Método
 
-O texto do enunciado faz alusão a uma dupla integração/diferenciação:
-- Para um sinal genérico $m(t)$, a dupla integração $\iint m$ não é proporcional a $m(t)$;
-- Contudo, para uma modulação por **tom senoidal puro** $m(t) = A_m \cos(\omega_m t)$:
-  $$\int m(t) dt = \frac{A_m}{\omega_m} \sin(\omega_m t)$$
-  $$\iint m(t) dt^2 = -\frac{A_m}{\omega_m^2} \cos(\omega_m t) = -\frac{1}{\omega_m^2} m(t)$$
-  e analogous para diferenciação: $\frac{d^2 m}{dt^2} = -\omega_m^2 m(t)$.
-- Assim, exclusivamente no caso senoidal mono-frequencial, a forma de onda resultante da dupla integração preserva a frequência fundamental do sinal original (com defasagem de $180^\circ$ e fator de escala $\frac{1}{\omega_m^2}$).
-- Para **qualquer sinal arbitrário** (voz, música, pulsos, dente-de-serra), a equivalência universal clássica da literatura (Lathi, Haykin, Carlson) é precisamente a sintetizada na frase final do enunciado:
-  $$\textbf{Integrador + Modulador PM} \longrightarrow \textbf{FM}$$
-  $$\textbf{Diferenciador + Modulador FM} \longrightarrow \textbf{PM}$$
+| Etapa | Demodulação FM | Demodulação PM |
+|---|---|---|
+| **Sinal Analítico** | $z(t) = \text{hilbert}(s_{\text{FM}}(t))$ | $z(t) = \text{hilbert}(s_{\text{PM}}(t))$ |
+| **Fase Instantânea** | $\theta_i(t) = \text{unwrap}(\text{angle}(z(t)))$ | $\theta_i(t) = \text{unwrap}(\text{angle}(z(t)))$ |
+| **Processamento da Fase** | Diferenciação finita temporal: $\frac{d\theta_i}{dt}$ | Uso direto da fase (sem derivar) |
+| **Frequência Instantânea** | $f_i(t) = \frac{1}{2\pi}\frac{d\theta_i}{dt}$ | Não utilizada para recuperação |
+| **Remoção da Portadora** | Subtração escalar da frequência $f_c$ | Subtração da rampa linear $2\pi f_c t$ |
+| **Estimativa da Mensagem** | $\hat{m}(t) = \frac{f_i(t) - f_c}{k_f}$ | $\hat{m}(t) = \frac{\Delta\phi(t)}{k_p}$ |
+| **Sensibilidade a Ruído Numérico** | Maior (efeito do operador diferencial) | Mínima (limitada pela precisão de máquina) |
 
 ---
 
-## 2. Diagramas de Blocos
+## 4. Resultados Numéricos e Análise dos Artefatos de Borda
 
-### Caso 1: Integrador + Modulador PM $\longrightarrow$ Modulador FM
+Executando a simulação com os parâmetros padrão da disciplina ($f_s = 200\text{ kHz}$, $f_c = 10\text{ kHz}$, $f_m = 500\text{ Hz}$, $A_m = 1.0\text{ V}$, $\Delta f = 5\text{ kHz}$, $k_p = 2.0\text{ rad/V}$), obtêm-se os seguintes resultados:
 
-```mermaid
-graph LR
-    M["m(t)<br>Mensagem"] --> INT["Integrador<br>∫₀ᵗ (·) dτ"]
-    INT -->|"x(t) = ∫ m(τ)dτ"| PM["Modulador de Fase (PM)<br>kp = 2π kf"]
-    OSC1["Portadora<br>c(t) = Ac cos(2π fc t)"] --> PM
-    PM --> FM_OUT["s_FM(t)<br>Sinal Modulado em Frequência"]
+```text
+===========================================================================
+ SIMULAÇÃO 8 — TÓPICO 8: DEMODULAÇÃO DE FM E DE PM
+===========================================================================
+
+[1] PARÂMETROS DA SIMULAÇÃO:
+    Taxa de amostragem fs : 200,000 Hz (sobreamostragem adequada)
+    Frequência portadora  : 10,000 Hz
+    Frequência mensagem fm: 500 Hz (tom senoidal)
+    Sensibilidade PM (kp) : 2.0000 rad/V (desvio de pico = 2.00 rad)
+    Sensibilidade FM (kf) : 5000.0 Hz/V  (desvio de pico delta_f = 5,000 Hz)
+
+[2] RESULTADOS DE MSE (ORIGINAL x RECUPERADO):
+    Demodulação FM : MSE Total =  1.934e-09 | MSE Miolo (Janela Central 90%) =  1.931e-09
+    Demodulação PM : MSE Total =  2.215e-23 | MSE Miolo (Janela Central 90%) =  1.585e-23
+
+[3] ANÁLISE QUANTITATIVA DOS ARTEFATOS DE BORDA (MARGEM = 5%):
+  FM : |erro| máx. bordas =  1.851e-04 | |erro| máx. centro =  6.266e-05 | amplificação na borda =    3.0x
+  PM : |erro| máx. bordas =  1.403e-11 | |erro| máx. centro =  1.130e-11 | amplificação na borda =    1.2x
 ```
 
-### Caso 2: Diferenciador + Modulador FM $\longrightarrow$ Modulador PM
+### Análise Crítica dos Artefatos de Borda:
 
-```mermaid
-graph LR
-    M2["m(t)<br>Mensagem"] --> DIF["Diferenciador<br>d(·)/dt"]
-    DIF -->|"y(t) = dm/dt"| FM["Modulador de Frequência (FM)<br>kf = kp / (2π)"]
-    OSC2["Portadora<br>c(t) = Ac cos(2π fc t)"] --> FM
-    FM --> PM_OUT["s_PM(t)<br>Sinal Modulado em Fase"]
+1. **Efeito da Derivada Numérica (`np.gradient`):**
+   - No **miolo** do vetor, a função `np.gradient` aplica a fórmula de **diferença finita centrada**:
+     $$\left.\frac{d\theta}{dt}\right|_{t_n} \approx \frac{\theta_{n+1} - \theta_{n-1}}{2\,\Delta t} + \mathcal{O}(\Delta t^2)$$
+     com erro de truncamento de **segunda ordem** $\mathcal{O}(\Delta t^2)$.
+   - Nas **extremidades** ($t = 0$ e $t = T$), por não haver pontos vizinhos de ambos os lados, o algoritmo comuta obrigatoriamente para **diferenças laterais progressiva e regressiva**:
+     $$\left.\frac{d\theta}{dt}\right|_{t_0} \approx \frac{\theta_1 - \theta_0}{\Delta t} + \mathcal{O}(\Delta t)$$
+     com erro de truncamento de **primeira ordem** $\mathcal{O}(\Delta t)$. Essa queda na ordem de aproximação amplifica pontualmente o erro local nas bordas em cerca de **$3\times$** no FM.
+
+2. **Efeito da Transformada de Hilbert via FFT:**
+   - A transformada de Hilbert em tempo discreto implementada via FFT (`scipy.signal.hilbert`) assume implicitamente que a sequência temporal é periódica com período igual à duração da janela.
+   - Como nossa janela temporal contém um número inteiro exato de períodos da mensagem ($50\text{ ms} = 25 \times T_m$) e da portadora, as descontinuidades circulares são minimizadas.
+   - Ainda assim, na PM — que **não depende de operador diferencial** —, o MSE atinge a ordem de $10^{-23}$ (piso de precisão do formato IEEE 754 em ponto flutuante duplo), demonstrando que a extração direta da fase instantânea é numericamente exata.
+
+---
+
+## 5. Gráfico do Entregável
+
+O gráfico abaixo foi gerado por `topico8_demodulacao.py` e sobrepõe, em subplots verticais separados, o sinal mensagem original $m(t)$ e o sinal recuperado para FM e PM:
+
+![Demodulação de FM e de PM](topico8_demodulacao.png)
+
+---
+
+## 6. Estrutura dos Arquivos
+
+```text
+simulacao-8/
+├── signals.py               # Definição de Parametros e geração dos sinais de referência
+├── topico8_demodulacao.py   # Script principal de demodulação, MSE e geração do gráfico
+├── topico8_demodulacao.png  # Gráficos do entregável (FM e PM em subplots separados)
+├── run.py                   # Bootstrap automático com verificação de ambiente virtual
+├── requirements.txt         # Dependências do projeto (numpy, scipy, matplotlib)
+├── index.html               # Aplicação web interativa para exploração em tempo real
+├── app.js                   # Lógica matemática da aplicação web (FFT e Hilbert próprias)
+├── styles.css               # Estilos modernos para a aplicação web
+└── README.md                # Relatório técnico completo e documentação da simulação
 ```
 
 ---
 
-## 3. Estrutura de Arquivos
+## 7. Como Executar
 
-- `signals.py`: Parâmetros do sistema (`Parametros`), geração de sinais e funções dedicadas para modulação direta (`modula_fm_direto`, `modula_pm_direto`) e indireta (`modula_fm_indireto`, `modula_pm_indireto`), integração trapezoidal e diferenciação central.
-- `simulacao8_equivalencia.py`: Script Python que comprova formal e numericamente a equivalência com cálculo de MSE no miolo ($MSE \approx 0$), plotando os gráficos comparativos salvos em `simulacao8_equivalencia.png`.
-- `topico8_demodulacao.py`: Script complementar de demodulação analítica via sinal analítico de Hilbert e desdobramento de fase (`np.unwrap`).
-- `run.py`: Bootstrap portátil inteligente que localiza o interpretador Python do projeto com as dependências instaladas e executa a simulação.
-- `index.html` + `app.js` + `styles.css`: **Simulação web interativa** com diagramas de blocos vetoriais (SVG), sliders interativos para $f_c$, $f_m$, $A_m$, $\Delta f$, $k_p$, seleção de forma de onda (senoidal, triangular e quadrada) e alternância entre modos de equivalência e demodulação.
+### Opção 1: Via Bootstrap Portátil (Recomendado)
 
----
-
-## 4. Como Executar
-
-### Simulação Python
-No terminal, execute o bootstrap portátil:
 ```bash
 python3 run.py
 ```
-*(Ou execute diretamente `python3 simulacao8_equivalencia.py` no ambiente com `numpy`, `scipy` e `matplotlib` configurados).*
+O script detecta interpretadores com as bibliotecas necessárias instaladas (incluindo o `.venv` local) e executa `topico8_demodulacao.py` de forma transparente.
 
-Para executar a demodulação complementar:
+### Opção 2: Execução Direta do Script Python
+
 ```bash
-python3 run.py --demod
+python3 topico8_demodulacao.py
 ```
 
-### Simulação Web Interativa
-Abra o arquivo `index.html` em qualquer navegador moderno (Chrome, Firefox, Edge, Safari):
-- Não requer servidor web nem conexão com a internet;
-- Funciona 100% offline via `file://`.
+### Opção 3: Simulação Web Interativa
+
+Abra diretamente o arquivo `index.html` em qualquer navegador web moderno:
+```bash
+xdg-open index.html  # No Linux
+# ou abra diretamente com duplo clique no arquivo index.html
+```
+A simulação web é 100% autônoma (não exige servidor HTTP nem faz requisições externas) e conta com:
+- Controles interativos para $f_c$, $f_m$, $A_m$, $\Delta f$ e $k_p$;
+- Gráficos separados para FM e PM sobrepondo original e recuperado;
+- Visualização da frequência instantânea $f_i(t)$ e do desvio de fase $\phi(t)$;
+- Inserção de ruído AWGN no canal com controle contínuo de SNR;
+- Tabela dinâmica de MSE e análise de erro em tempo real.
 
 ---
 
-## 5. Resultados Numéricos Obtidos
-
-Com os parâmetros nominais ($f_c = 10\text{ kHz}$, $f_m = 500\text{ Hz}$, $A_m = 1.0\text{ V}$, $\Delta f = 5\text{ kHz}$, $k_p = 2.0\text{ rad/V}$):
-
-| Comparação | Relação de Conversão | MSE Total | MSE Miolo | Status |
-|---|---|---|---|---|
-| **FM Direto $\times$ Integrador + PM** | $k_p = 2\pi k_f$ | $0.000\times 10^0$ | $0.000\times 10^0$ | **Identidade Perfeita** |
-| **PM Direto $\times$ Diferenciador + FM** | $k_f = \frac{k_p}{2\pi}$ | $3.802\times 10^{-9}$ | $3.805\times 10^{-9}$ | **Identidade Perfeita** |
-
-*Nota: O resíduo infinitesimal de ordem $10^{-9}$ no caso PM provém unicamente da discretização numérica da derivada temporal finita.*
-
----
-
-## Discentes
+## 8. Discentes
 
 - Paulo Henrique de Farias Martins
 - Cauã Tavares Nunes
