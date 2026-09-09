@@ -1,24 +1,30 @@
 /* ==========================================================================
    Simulação 8 — Modulação Angular (FM / PM)
-   Tópico 8 · Demodulação pela fase instantânea
-   Tema escuro monocromático com destaque teal
+   Equivalência entre Moduladores:
+   - Integrador + Modulador PM ⟶ Modulador FM
+   - Diferenciador + Modulador FM ⟶ Modulador PM
+   Tema escuro sofisticado, limpo e com alto contraste
    ========================================================================== */
 
 :root {
   --bg-dark: #09090b;
   --bg-card: #121215;
+  --bg-card-alt: #18181b;
   --border-color: #27272a;
+  --border-highlight: #3f3f46;
 
   --text-main: #ffffff;
   --text-muted: #a1a1aa;
   --text-dim: #71717a;
 
-  /* Cores das séries (mesma convenção do código Python) */
-  --signal: #38bdf8;   /* m(t) — mensagem            */
-  --fm: #f59e0b;        /* grandezas de FM            */
-  --pm: #a78bfa;        /* grandezas de PM            */
-  --accent: #2dd4bf;    /* destaque da interface      */
-  --alert: #ef4444;     /* erro acima do tolerável    */
+  /* Cores temáticas para grandezas e sinais */
+  --signal: #38bdf8;     /* m(t) — mensagem original (ciano) */
+  --processed: #34d399;  /* ∫m dt ou dm/dt — sinal pré-processado (esmeralda) */
+  --direct: #f59e0b;     /* Sinal Modulado Direto (âmbar) */
+  --indirect: #a78bfa;   /* Sinal Modulado Indireto (violeta) */
+  --accent: #2dd4bf;     /* Destaque da interface (teal) */
+  --alert: #ef4444;      /* Indicador de erro (vermelho) */
+  --success: #10b981;    /* Indicador de sucesso (verde) */
 
   --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --radius-lg: 12px;
@@ -27,7 +33,11 @@
   --shadow-main: 0 10px 30px rgba(0, 0, 0, 0.7);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background-color: var(--bg-dark);
@@ -40,7 +50,7 @@ body {
 }
 
 .container {
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -62,7 +72,7 @@ body {
 }
 
 .header-title h1 {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   display: flex;
@@ -88,17 +98,7 @@ body {
   letter-spacing: 0.06em;
 }
 
-/* Layout ---------------------------------------------------------------- */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 1.5rem;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-grid { grid-template-columns: 1fr; }
-}
-
+/* Card Geral --------------------------------------------------------------- */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -108,7 +108,9 @@ body {
   transition: border-color 0.2s ease;
 }
 
-.card:hover { border-color: var(--text-dim); }
+.card:hover {
+  border-color: var(--border-highlight);
+}
 
 .card-header {
   display: flex;
@@ -120,7 +122,7 @@ body {
 }
 
 .card-title {
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -128,13 +130,128 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* Controles ------------------------------------------------------------- */
-.control-sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
-.main-panels { display: flex; flex-direction: column; gap: 1.5rem; }
+/* Diagrama de Blocos e Teoria ---------------------------------------------- */
+.diagram-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  overflow-x: auto;
+}
 
-.control-group { display: flex; flex-direction: column; gap: 1.1rem; }
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
 
-.form-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.tab-btn:hover {
+  color: var(--text-main);
+  background: #1c1c21;
+}
+
+.tab-btn.active {
+  background: #27272a;
+  color: var(--accent);
+  border-color: var(--border-color);
+}
+
+.diagram-panel {
+  display: none;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.diagram-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.diagram-svg-wrap {
+  width: 100%;
+  background: #0d0d10;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.diagram-svg-wrap svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.math-proof-box {
+  background: #141418;
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem 1.1rem;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.math-proof-box code {
+  color: var(--text-main);
+  background: #1e1e24;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: monospace;
+}
+
+/* Layout do Dashboard ------------------------------------------------------ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1080px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.control-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.main-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Controles de Formulário -------------------------------------------------- */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
 
 .form-field label {
   font-size: 0.825rem;
@@ -145,10 +262,25 @@ body {
   align-items: center;
 }
 
+.form-field select {
+  background: #1c1c21;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+
 .value-display {
   color: var(--text-main);
   font-family: monospace;
-  font-weight: 700;
+  font-size: 0.85rem;
+  background: #18181b;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
 }
 
 input[type="range"] {
@@ -159,6 +291,7 @@ input[type="range"] {
   background: #27272a;
   border-radius: 3px;
   outline: none;
+  cursor: pointer;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -167,121 +300,134 @@ input[type="range"]::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--text-main);
+  background: var(--accent);
   cursor: pointer;
-  border: 2px solid var(--bg-dark);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  box-shadow: 0 0 6px rgba(45, 212, 191, 0.5);
+  transition: transform 0.1s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  background: var(--accent);
+  transform: scale(1.15);
 }
 
 .checkbox-field {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  font-size: 0.825rem;
+  gap: 0.6rem;
+  font-size: 0.83rem;
   color: var(--text-muted);
+  cursor: pointer;
 }
 
-.checkbox-field input { width: 15px; height: 15px; accent-color: var(--accent); }
+.checkbox-field input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
 
-/* Cartões de métrica -------------------------------------------------- */
+/* Métricas ----------------------------------------------------------------- */
 .metrics-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
-  margin-top: 0.5rem;
 }
 
 .metric-card {
-  background: #09090b;
+  background: #18181b;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 0.75rem;
-  text-align: center;
-  transition: border-color 0.2s ease;
-}
-
-.metric-card.alert-border {
-  border-color: var(--alert);
-  background: rgba(239, 68, 68, 0.05);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .metric-label {
   font-size: 0.72rem;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   font-weight: 500;
-  letter-spacing: 0.02em;
 }
 
 .metric-value {
+  font-family: monospace;
   font-size: 1.15rem;
   font-weight: 700;
-  font-family: monospace;
-  margin-top: 0.15rem;
-}
-
-.metric-value.fm { color: var(--fm); }
-.metric-value.pm { color: var(--pm); }
-.metric-value.alert-text { color: var(--alert); }
-
-/* Botões -------------------------------------------------------------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.8rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--border-color);
-  background: #18181b;
   color: var(--text-main);
-  transition: all 0.2s ease;
 }
 
-.btn:hover { background: #27272a; border-color: var(--text-muted); }
+.metric-value.success {
+  color: var(--success);
+}
 
-.btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.metric-value.direct {
+  color: var(--direct);
+}
 
-/* Canvas ------------------------------------------------------------- */
+.metric-value.indirect {
+  color: var(--indirect);
+}
+
+.metric-value.alert-text {
+  color: var(--alert);
+}
+
+/* Canvas e Gráficos -------------------------------------------------------- */
 .canvas-container {
   position: relative;
   width: 100%;
-  height: 300px;
-  background: #050507;
+  height: 230px;
+  background: #09090b;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
-canvas { width: 100%; height: 100%; display: block; }
+.canvas-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 
 .canvas-tag {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 8px;
+  right: 12px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: monospace;
+  pointer-events: none;
+  background: rgba(18, 18, 21, 0.75);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn {
   background: #18181b;
-  border: 1px solid var(--border-color);
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.72rem;
-  font-weight: 600;
   color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  color: var(--text-main);
+  background: #27272a;
+  border-color: var(--text-dim);
 }
 
 .legend {
   display: flex;
-  gap: 1.4rem;
-  justify-content: center;
-  margin-top: 0.85rem;
-  font-size: 0.78rem;
   flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.78rem;
+  margin-top: 0.75rem;
 }
 
 .legend span {
@@ -298,16 +444,24 @@ canvas { width: 100%; height: 100%; display: block; }
   border-radius: 2px;
 }
 
-.legend .swatch.dashed { height: 0; border-top: 3px dashed currentColor; }
+.legend .swatch.dashed {
+  height: 0;
+  border-top: 3px dashed currentColor;
+}
 
-/* Tabela ----------------------------------------------------------- */
+/* Tabela de Erro e Validação ----------------------------------------------- */
 .table-wrapper {
   overflow-x: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
 }
 
-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.84rem;
+}
 
 th {
   background: #18181b;
@@ -326,23 +480,31 @@ td {
   font-family: monospace;
 }
 
-td:first-child { font-family: var(--font-family); font-weight: 600; }
+td:first-child {
+  font-family: var(--font-family);
+  font-weight: 600;
+}
 
-tbody tr:last-child td { border-bottom: none; }
+tbody tr:last-child td {
+  border-bottom: none;
+}
 
-.tag-fm { color: var(--fm); }
-.tag-pm { color: var(--pm); }
+.tag-fm { color: var(--direct); }
+.tag-pm { color: var(--indirect); }
+.tag-ok { color: var(--success); font-weight: bold; }
 
-/* Nota / discussão ----------------------------------------------- */
+/* Nota / Discussão --------------------------------------------------------- */
 .note {
   font-size: 0.82rem;
   color: var(--text-muted);
   line-height: 1.6;
 }
 
-.note strong { color: var(--text-main); }
+.note strong {
+  color: var(--text-main);
+}
 
-/* Footer -------------------------------------------------------- */
+/* Footer ------------------------------------------------------------------- */
 footer {
   text-align: center;
   padding: 1.5rem;
@@ -350,4 +512,8 @@ footer {
   font-size: 0.82rem;
   border-top: 1px solid var(--border-color);
   margin-top: 1rem;
+}
+
+footer p + p {
+  margin-top: 0.35rem;
 }
